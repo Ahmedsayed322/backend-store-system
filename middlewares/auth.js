@@ -18,6 +18,14 @@ const userAuth = asyncHandler(async (req, res, next) => {
   req.token = token;
   next();
 });
+const adminOnly = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return next(new ApiError('you are not allowed', 403));
+  }
+  next();
+};
+
 module.exports = {
   userAuth,
+  adminOnly,
 };

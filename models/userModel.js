@@ -76,6 +76,9 @@ userSchema.methods.generateToken = async function () {
   const token = jwt.sign({ _id: this._id }, process.env.SECRET_KEY, {
     expiresIn: '1h',
   });
+  if (this.tokens.length >= 4) {
+    this.tokens.shift();
+  }
   this.tokens = [...this.tokens, token];
   await this.save();
 
@@ -100,6 +103,12 @@ userSchema.statics.login = async function (emailorusername, password, next) {
   if (!user || !(await bcrypt.compare(password, user.password))) {
     return next(new ApiError('invalid Email/Username or password', 401));
   }
+  return user;
+};
+userSchema.methods.toJSON = function () {
+  const user = this.toObject();
+  delete user.password;
+  delete user.tokens;
   return user;
 };
 const User = mongoose.model('User', userSchema);
