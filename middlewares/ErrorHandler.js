@@ -14,7 +14,7 @@ const ErrorHandler = (err, req, res, next) => {
   // Handle Duplicate Key Errors
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
-    err = new ApiError(`Duplicate field value: '${field}' already exists`, 400);
+    err = new ApiError(`this '${field}' already exists`, 400);
   }
 
   // Handle Cast Errors (e.g. invalid Mongo ID)
@@ -35,6 +35,7 @@ const ErrorHandler = (err, req, res, next) => {
   return res.status(err.statusCode).json({
     status: err.status,
     message: err.message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };
 

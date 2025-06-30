@@ -1,10 +1,15 @@
+const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const validator = require('validator');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const ApiError = require('../utils/apiError');
 const userSchema = new mongoose.Schema(
   {
     username: {
       type: String,
       required: [true, 'username is required'],
+      unique: true,
       validate(val) {
         const pattern = new RegExp(
           '^(?=[a-zA-Z0-9._]{8,20}$)(?!.*[_.]{2})[^_.].*[^_.]$'
@@ -30,7 +35,7 @@ const userSchema = new mongoose.Schema(
       required: [true, 'gender is required'],
       enum: ['male', 'female'],
     },
-    name: { type: String, required: true },
+    name: { type: String, required: [true, 'name is required'] },
 
     phonenumber: {
       type: String,
@@ -50,12 +55,52 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      required: true,
+      required: [true, 'role is required'],
       default: 'user',
       enum: ['admin', 'user'],
+    },
+    tokens: {
+      type: [String],
+      default: [],
     },
   },
   { timestamps: true }
 );
+userSchema.pre('save', async function (next) {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
+});
+userSchema.methods.generateToken = async function () {
+  const token = jwt.sign({ _id: this._id }, process.env.SECRET_KEY, {
+    expiresIn: '1h',
+  });
+  this.tokens = [...this.tokens, token];
+  await this.save();
+
+  return token;
+};
+userSchema.statics.login = async function (emailorusername, password, next) {
+  const User = this;
+  const search = {};
+  if (emailorusername) {
+    if (validator.isEmail(emailorusername)) {
+      search.email = emailorusername;
+    } else {
+      search.username = emailorusername;
+    }
+  } else {
+    return next(new ApiError('please Enter Email/Username', 400));
+  }
+  if (!password) {
+    return next(new ApiError('please Enter Password', 400));
+  }
+  const user = await User.findOne(search);
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return next(new ApiError('invalid Email/Username or password', 401));
+  }
+  return user;
+};
 const User = mongoose.model('User', userSchema);
 module.exports = User;

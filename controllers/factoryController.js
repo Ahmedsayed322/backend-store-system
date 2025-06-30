@@ -54,7 +54,8 @@ exports.deleteOne = (Model) =>
       return next(new ApiError(`${Model.modelName} Not found`, 404));
     }
 
+    res;
     res
       .status(200)
-      .send({ message: `${Model.modelName} deleted successfully` });
+      .json({ message: `${Model.modelName} deleted successfully` });
   });
