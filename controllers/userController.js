@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
 const ApiError = require('../utils/apiError');
+
 exports.signup = asyncHandler(async (req, res, next) => {
   const user = new User(req.body);
   const token = await user.generateToken();
