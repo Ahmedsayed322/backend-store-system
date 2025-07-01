@@ -12,7 +12,8 @@ const hpp = require('hpp');
 const compression = require('compression');
 const app = express();
 const PORT = process.env.PORT || 5000;
-
+const path = require('path');
+app.use(express.static(path.join(__dirname, './public')));
 // 1️⃣ Morgan (Logging)
 if (process.env.Node_ENV === 'development') {
   app.use(morgan('dev'));

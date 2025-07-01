@@ -6,13 +6,13 @@ const categorySchema = new mongoose.Schema(
       type: String,
       required: [true, 'Category name is required'],
       unique: [true, 'this Category already exist'],
+      minlength: [3, 'too short name'],
       lowercase: true,
     },
     slug: {
       type: String,
       lowercase: true,
     },
-    // image: String,
   },
   { timestamps: true }
 );

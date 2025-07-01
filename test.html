@@ -1,0 +1,39 @@
+<form id="productForm" enctype="multipart/form-data">
+  <input type="text" name="name" placeholder="Product name" />
+  <input type="number" name="price" placeholder="Price" />
+  <input type="file" name="images" multiple />
+  <button type="submit">Add Product</button>
+</form>
+
+<h2></h2>
+
+<script>
+  const form = document.getElementById('productForm');
+  const heading = document.getElementsByTagName('h2')[0];
+  const img = document.getElementById('preview');
+
+  const token =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODYyN2M1ZGE5NWM0YzM4YjU1OGQ1NmUiLCJpYXQiOjE3NTEzNjQwNTIsImV4cCI6MTc1Mzk1NjA1Mn0.fSH6ZhQcRdKf6HXStl8EcLVe6CryGuBdxuHGIzXJZs';
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    try {
+      const res = await fetch('http://localhost:3000/api/product/add', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      console.log(data.message);
+      console.log(data);
+    } catch (e) {
+      console.log(e);
+    }
+
+    // عرض الصورة
+  });
+</script>

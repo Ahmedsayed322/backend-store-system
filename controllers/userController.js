@@ -43,3 +43,13 @@ exports.edit = asyncHandler(async (req, res, next) => {
   await user.save();
   res.status(200).json({ message: 'Updated successfully', user });
 });
+exports.logout = asyncHandler(async (req, res, next) => {
+  req.user.tokens = req.user.tokens.filter((token) => token !== req.token);
+  await req.user.save();
+  res.status(201).json({ message: 'user logged out' });
+});
+exports.logoutAll = asyncHandler(async (req, res, next) => {
+  req.user.tokens = [];
+  await req.user.save();
+  res.status(201).json({ message: 'user logged out from all devices' });
+});

@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const ApiError = require('../utils/apiError');
-
+const fs = require('fs');
+const path = require('path');
 exports.createOne = (Model) =>
   asyncHandler(async (req, res) => {
     {
@@ -59,3 +60,13 @@ exports.deleteOne = (Model) =>
       .status(200)
       .json({ message: `${Model.modelName} deleted successfully` });
   });
+exports.deleteUploadedFiles = (filesArray) => {
+  filesArray.forEach((file) => {
+    fs.unlink(
+      path.join(__dirname, `../public/uploads/${file.filename}`),
+      (err) => {
+        if (err) console.error('Failed to delete file:', file.filename);
+      }
+    );
+  });
+};
