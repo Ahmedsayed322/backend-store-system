@@ -70,3 +70,17 @@ exports.deleteUploadedFiles = (filesArray) => {
     );
   });
 };
+exports.updateRatings = (product, populatedProduct) => {
+  if (populatedProduct.reviews.length === 0) {
+    product.ratingsCount = 0;
+    product.ratingsAverage = 0;
+  } else {
+    const total = populatedProduct.reviews.reduce(
+      (acc, cur) => acc + parseFloat(cur.rating),
+      0
+    );
+    product.ratingsCount = populatedProduct.reviews.length;
+    product.ratingsAverage =
+      Math.round((total / product.ratingsCount) * 100) / 100;
+  }
+};

@@ -4,9 +4,17 @@ const bcrypt = require('bcrypt');
 const ApiError = require('../utils/apiError');
 
 exports.signup = asyncHandler(async (req, res, next) => {
+  req.body.role = 'user';
   const user = new User(req.body);
   const token = await user.generateToken();
-  res.status(201).json({ user, token });
+  res.status(201).json(
+    res.status(201).json({
+      status: 'success',
+      message: 'signup successful',
+      token,
+      user,
+    })
+  );
 });
 exports.login = asyncHandler(async (req, res, next) => {
   const user = await User.login(
@@ -15,15 +23,25 @@ exports.login = asyncHandler(async (req, res, next) => {
     next
   );
   const token = await user.generateToken();
-  res.status(200).json({ message: 'login successful', user, token });
+  res.status(200).json({
+    status: 'success',
+    message: 'login successful',
+    token: token,
+    user: user,
+  });
 });
 exports.profile = asyncHandler(async (req, res, next) => {
   return res.status(200).json(req.user);
 });
 exports.edit = asyncHandler(async (req, res, next) => {
   const user = req.user;
-
+  if ('role' in req.body) {
+    delete req.body.role;
+  }
   // If user wants to change password
+  if ('newPassword' in req.body && !req.body.oldPassword) {
+    return next(new ApiError('You must provide your old password', 400));
+  }
   if (req.body.oldPassword && req.body.newPassword) {
     const isMatch = await bcrypt.compare(req.body.oldPassword, user.password);
     if (!isMatch) {

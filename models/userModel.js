@@ -39,6 +39,11 @@ const userSchema = new mongoose.Schema(
 
     phonenumber: {
       type: String,
+      validate(val) {
+        if (val && !validator.isMobilePhone(val, 'any')) {
+          throw new Error('Invalid phone number');
+        }
+      },
     },
     password: {
       type: String,
@@ -55,7 +60,6 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      required: [true, 'role is required'],
       default: 'user',
       enum: ['admin', 'user'],
     },
@@ -70,6 +74,7 @@ userSchema.pre('save', async function (next) {
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, 10);
   }
+
   next();
 });
 userSchema.methods.generateToken = async function () {
@@ -94,14 +99,14 @@ userSchema.statics.login = async function (emailorusername, password, next) {
       search.username = emailorusername;
     }
   } else {
-    return next(new ApiError('please Enter Email/Username', 400));
+    throw new Error('please Enter Email/Username');
   }
   if (!password) {
-    return next(new ApiError('please Enter Password', 400));
+    throw new Error('please Enter Password');
   }
   const user = await User.findOne(search);
   if (!user || !(await bcrypt.compare(password, user.password))) {
-    return next(new ApiError('invalid Email/Username or password', 401));
+    throw new Error('invalid Email/Username or password');
   }
   return user;
 };
