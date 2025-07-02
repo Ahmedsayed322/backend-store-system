@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { validate } = require('./userModel');
 
 const cartSchema = new mongoose.Schema(
   {
@@ -14,6 +15,11 @@ const cartSchema = new mongoose.Schema(
         quantity: {
           type: Number,
           default: 1,
+          validate() {
+            if (this.quantity <= 0) {
+              throw new Error('Quantity must be greater than 0');
+            }
+          },
         },
         price: {
           type: Number,
@@ -44,16 +50,16 @@ cartSchema.pre('save', async function (next) {
       this.totalafterdiscount = 0;
     } else {
       this.totalprice = this.cartitems.reduce(
-        (acc, item) => acc + item.price * item.quantity,
+        (acc, item) => acc + item.price,
         0
       );
-      this.totalafterdiscount = this.totalprice - this.totalprice * 0.18;
+      this.totalafterdiscount = this.totalprice - this.totalprice * 0;
     }
     next();
   } catch (e) {
     next(e);
   }
 });
-
 const Cart = mongoose.model('Cart', cartSchema);
-module.exports = Cart;
+
+module.exports = { Cart };

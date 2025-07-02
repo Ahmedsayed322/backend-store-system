@@ -1,3 +1,4 @@
+const { cartRouter } = require('./cartRoute');
 const categoryroute = require('./categoryRoute');
 const productRouter = require('./productRoute');
 const { reviewRouter } = require('./reviewRoute');
@@ -8,4 +9,5 @@ exports.setRoute = (app) => {
   app.use('/api/user', userRouter);
   app.use('/api/product', productRouter);
   app.use('/api/review', reviewRouter);
+  app.use('/api/cart', cartRouter);
 };

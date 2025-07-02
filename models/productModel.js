@@ -43,9 +43,11 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Cover image is required'],
     },
+    // coverImagePublicId: String,
     images: [
       {
         type: Object,
+        // public_id: String,
       },
     ],
     colors: [String],
