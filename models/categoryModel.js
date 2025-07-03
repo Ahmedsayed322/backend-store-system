@@ -9,6 +9,12 @@ const categorySchema = new mongoose.Schema(
       minlength: [3, 'too short name'],
       lowercase: true,
     },
+    products:[
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product',
+        }
+    ],
     slug: {
       type: String,
       lowercase: true,

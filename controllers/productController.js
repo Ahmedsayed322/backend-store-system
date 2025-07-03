@@ -16,11 +16,12 @@ exports.addProduct = asyncHandler(async (req, res, next) => {
     return next(new ApiError('Exactly one cover image is required', 400));
   }
 
-  const check = await Category.findOne({ name: req.body.category });
-  if (!check) {
+  const category = await Category.findOne({ name: req.body.category });
+  if (!category) {
     deleteUploadedFiles([...images, ...coverImage]);
     return next(new ApiError('Category not found in database', 404));
   }
+
   if (req.body.colors) {
     req.body.colors = req.body.colors
       .split('-')
@@ -33,9 +34,11 @@ exports.addProduct = asyncHandler(async (req, res, next) => {
     coverImage: `${req.protocol}://${req.get('host')}/uploads/${
       coverImage[0].filename
     }`,
-    category: check._id,
+    category: category._id,
   });
   await newProduct.save();
+  category.products.push(newProduct._id);
+  await category.save();
   const populatedProduct = await newProduct.populate('category');
   res.status(201).json({
     status: 'success',

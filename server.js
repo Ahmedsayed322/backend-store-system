@@ -49,8 +49,13 @@ setRoute(app);
 // 7️⃣ Error Handling
 const ErrorHandler = require('./middlewares/ErrorHandler');
 app.use(ErrorHandler);
-console.log("welcome to logs")
+console.log('welcome to logs');
 // 8️⃣ Listen
+
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./utils/swaggerOptions'); // الملف اللي فوق
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

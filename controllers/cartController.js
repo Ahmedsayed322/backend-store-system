@@ -70,3 +70,47 @@ exports.addToCart = asyncHandler(async (req, res, next) => {
     data: cart,
   });
 });
+////////////////////////////////////////////////////////////////////////////////
+exports.removeProductFromCart = asyncHandler(async (req, res, next) => {
+  const id = req.params.id;
+  const color = req.body.color;
+  if (!color) {
+    return next(new ApiError('Color is required', 400));
+  }
+  const cart = await Cart.findOne({
+    user: req.user._id,
+    'cartitems.product': id,
+    'cartitems.color': color,
+  });
+  if (!cart) {
+    return next(new ApiError('product not found', 404));
+  }
+  const newCartItems = cart.cartitems.filter((i) => {
+    return !(i.product.toString() === id.toString() && i.color === color);
+  });
+  cart.cartitems = newCartItems;
+  await cart.save();
+  return res.status(200).json({
+    status: 'success',
+    data: cart,
+  });
+});
+exports.clearCart = asyncHandler(async (req, res, next) => {
+  const cart = await Cart.findOne({ user: req.user._id });
+  cart.cartitems = [];
+  await cart.save();
+  return res.status(200).json({
+    status: 'success',
+    data: cart,
+  });
+});
+exports.getCart = asyncHandler(async (req, res, next) => {
+  const cart = await Cart.findOne({ user: req.user._id }).populate({
+    path: 'cartitems.product',
+    select: 'title price coverImage',
+  });
+  res.status(200).json({
+    status: 'success',
+    data: cart,
+  });
+});
