@@ -5,6 +5,7 @@ const ApiError = require('../utils/apiError');
 const fs = require('fs');
 const path = require('path');
 const { deleteUploadedFiles } = require('./factoryController');
+const { safelyDeleteImage } = require('../utils/safelyDeleteImage');
 exports.addProduct = asyncHandler(async (req, res, next) => {
   const images = req.files.images || [];
   const coverImage = req.files.coverImage || [];
@@ -85,6 +86,17 @@ exports.editProduct = asyncHandler(async (req, res, next) => {
       deleteUploadedFiles([...images, ...coverImage]);
       return next(new ApiError('Category not found in database', 404));
     }
+    const oldCat = await Category.findOne({ products: id });
+    console.log(oldCat);
+    if (oldCat) {
+      oldCat.products = oldCat.products.filter((i) => {
+        console.log(i);
+        return i.toString() !== id.toString();
+      });
+      await oldCat.save();
+    }
+    category.products.push(id);
+    await category.save();
     req.body.category = category._id;
   }
 
@@ -139,6 +151,69 @@ exports.editProduct = asyncHandler(async (req, res, next) => {
       product: updatedProduct,
     },
   });
+});
+exports.getAllProducts = asyncHandler(async (req, res, next) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const queryObj = {};
+
+  // 🔍 Search by name
+  if (req.query.search) {
+    queryObj.title = { $regex: req.query.search, $options: 'i' };
+  }
+
+  // 🔢 Filter by price range
+  if (req.query.minPrice || req.query.maxPrice) {
+    queryObj.price = {};
+    if (req.query.minPrice) queryObj.price.$gte = req.query.minPrice;
+    if (req.query.maxPrice) queryObj.price.$lte = req.query.maxPrice;
+  }
+
+  const products = await Product.find(queryObj)
+    .populate('category')
+    .populate('reviews')
+    .skip(skip)
+    .limit(limit);
+
+  const total = await Product.countDocuments(queryObj);
+
+  res.status(200).json({
+    status: 'success',
+    results: products.length,
+    page,
+    totalPages: Math.ceil(total / limit),
+    data: {
+      products,
+    },
+  });
+});
+
+exports.deleteProduct = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const product = await Product.findById(id);
+  if (!product) {
+    return next(new ApiError('Product not found', 404));
+  }
+
+  // حذف الصور من السيرفر
+  if (product.images && product.images.length > 0) {
+    product.images.forEach((imgObj) => safelyDeleteImage(imgObj.img))
+  }
+
+  if (product.coverImage) {
+    safelyDeleteImage(product.coverImage);
+  }
+
+  // حذف من الكاتيجوري
+  await Category.updateMany({ products: id }, { $pull: { products: id } });
+
+  // حذف المنتج نفسه
+  await Product.findByIdAndDelete(id);
+
+  res.status(200).json({ status: 'success', data: null });
 });
 /////////////////////////////////////////////////////////////
 // exports.addProduct = asyncHandler(async (req, res, next) => {

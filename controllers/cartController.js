@@ -114,3 +114,54 @@ exports.getCart = asyncHandler(async (req, res, next) => {
     data: cart,
   });
 });
+exports.editCartItem = asyncHandler(async (req, res, next) => {
+  const { id } = req.params; // ده productId
+  const { color, quantity } = req.body;
+
+  if (!color) {
+    return next(new ApiError('Color is required', 400));
+  }
+
+  if (!quantity || quantity <= 0) {
+    return next(new ApiError('Valid quantity is required', 400));
+  }
+
+  const product = await Product.findById(id);
+  if (!product) {
+    return next(new ApiError('Product not found', 404));
+  }
+
+  const colorExists = product.colors.includes(color);
+  if (!colorExists) {
+    return next(new ApiError('Color not available for this product', 400));
+  }
+
+  if (quantity > product.quantity) {
+    return next(new ApiError('Quantity exceeds available stock', 400));
+  }
+
+  const cart = await Cart.findOne({ user: req.user._id });
+  if (!cart) {
+    return next(new ApiError('Cart not found', 404));
+  }
+
+  const cartItem = cart.cartitems.find(
+    (item) => item.product.toString() === id.toString() && item.color === color
+  );
+
+  if (!cartItem) {
+    return next(new ApiError('Product not found in cart with this color', 404));
+  }
+
+  cartItem.quantity = quantity;
+  cartItem.price = quantity * product.price;
+  cartItem.priceafterdiscount = quantity * (product.price - product.discount);
+
+  await cart.save();
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Cart item updated successfully',
+    data: cart,
+  });
+});

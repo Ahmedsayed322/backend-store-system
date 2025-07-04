@@ -5,6 +5,7 @@ const {
   removeProductFromCart,
   clearCart,
   getCart,
+  editCartItem,
 } = require('../controllers/cartController');
 const cartRouter = express.Router();
 
@@ -101,6 +102,57 @@ cartRouter.delete('/clear', userAuth, clearCart);
  */
 
 cartRouter.get('/', userAuth, getCart);
+/**
+ * @swagger
+ * /api/cart/edit/{id}:
+ *   patch:
+ *     summary: Edit a product in the cart (change quantity)
+ *     tags: [Cart]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Product ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - color
+ *               - quantity
+ *             properties:
+ *               color:
+ *                 type: string
+ *                 example: "red"
+ *               quantity:
+ *                 type: number
+ *                 example: 2
+ *     responses:
+ *       200:
+ *         description: Cart item updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Cart'
+ *       400:
+ *         description: Invalid input (e.g. color not available or quantity exceeds stock)
+ *       404:
+ *         description: Product or cart not found
+ */
+cartRouter.patch('/edit/:id', userAuth, editCartItem);
 
 module.exports = {
   cartRouter,
