@@ -7,26 +7,36 @@ exports.signup = asyncHandler(async (req, res, next) => {
   req.body.role = 'user';
   const user = new User(req.body);
   const token = await user.generateToken();
-  res.status(201).json(
-    res.status(201).json({
-      status: 'success',
-      message: 'signup successful',
-      token,
-      user,
-    })
-  );
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+  res.status(201).json({
+    status: 'success',
+    message: 'signup successful',
+
+    user,
+  });
 });
 exports.login = asyncHandler(async (req, res, next) => {
   const user = await User.login(
     req.body.emailorusername,
     req.body.password,
-    next
+    
   );
   const token = await user.generateToken();
+  res.cookie('token', token, {
+    httpOnly: true,
+
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
   res.status(200).json({
     status: 'success',
     message: 'login successful',
-    token: token,
     user: user,
   });
 });
@@ -64,7 +74,13 @@ exports.edit = asyncHandler(async (req, res, next) => {
 exports.logout = asyncHandler(async (req, res, next) => {
   req.user.tokens = req.user.tokens.filter((token) => token !== req.token);
   await req.user.save();
-  res.status(201).json({ message: 'user logged out' });
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Strict',
+  });
+
+  res.status(200).json({ message: 'Logged out' });
 });
 exports.logoutAll = asyncHandler(async (req, res, next) => {
   req.user.tokens = [];

@@ -51,7 +51,7 @@ exports.addProduct = asyncHandler(async (req, res, next) => {
 
 exports.getProduct = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const product = await Product.findByIdId(id);
+  const product = await Product.findById(id);
   if (!product) {
     return next(new ApiError('Product not found in database', 404));
   }

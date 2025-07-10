@@ -3,11 +3,13 @@ const ApiError = require('../utils/apiError');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const userAuth = asyncHandler(async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next(new ApiError('Authorization header must be provided', 400));
-  }
-  const token = req.headers['authorization'].replace('Bearer ', '');
+  // const authHeader = req.headers.authorization;
+  // if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  //   return next(new ApiError('Authorization header must be provided', 400));
+  // }
+  // const token = req.headers['authorization'].replace('Bearer ', '');
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ message: 'Unauthorized' });
   const decoded = await jwt.verify(token, process.env.SECRET_KEY);
   const user = await User.findOne({ _id: decoded._id, tokens: token });
   if (!user) {

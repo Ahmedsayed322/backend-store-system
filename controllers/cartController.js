@@ -7,9 +7,19 @@ const { default: mongoose } = require('mongoose');
 exports.addToCart = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
+  // Validate product ID
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return next(new ApiError('Invalid product ID', 400));
+  }
+
   const product = await Product.findById(id);
   if (!product) {
     return next(new ApiError('Product not found', 404));
+  }
+
+  // Check if product is available
+  if (product.quantity <= 0) {
+    return next(new ApiError('Product is out of stock', 400));
   }
 
   if (!req.body.color) {
@@ -39,11 +49,16 @@ exports.addToCart = asyncHandler(async (req, res, next) => {
     (item) =>
       item.product.toString() === id.toString() && item.color === req.body.color
   );
-  const quantity =
-    req.body.quantity && req.body.quantity > 0 ? req.body.quantity : 1;
+  
+  // Validate quantity
+  const quantity = req.body.quantity && req.body.quantity > 0 ? req.body.quantity : 1;
+  if (quantity <= 0) {
+    return next(new ApiError('Quantity must be greater than 0', 400));
+  }
+
   if (existingItem) {
-    const reqQuntity = existingItem.quantity + quantity;
-    if (reqQuntity > product.quantity) {
+    const reqQuantity = existingItem.quantity + quantity;
+    if (reqQuantity > product.quantity) {
       return next(new ApiError('Quantity exceeds available stock', 400));
     }
     existingItem.quantity += quantity;
@@ -64,7 +79,6 @@ exports.addToCart = asyncHandler(async (req, res, next) => {
   }
 
   await cart.save();
-  //   const updatedCart = await Cart.findById(cart._id);
   return res.status(201).json({
     status: 'success',
     data: cart,
@@ -74,22 +88,33 @@ exports.addToCart = asyncHandler(async (req, res, next) => {
 exports.removeProductFromCart = asyncHandler(async (req, res, next) => {
   const id = req.params.id;
   const color = req.body.color;
+  
+  // Validate product ID
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return next(new ApiError('Invalid product ID', 400));
+  }
+  
   if (!color) {
     return next(new ApiError('Color is required', 400));
   }
+  
   const cart = await Cart.findOne({
     user: req.user._id,
     'cartitems.product': id,
     'cartitems.color': color,
   });
+  
   if (!cart) {
-    return next(new ApiError('product not found', 404));
+    return next(new ApiError('Product not found in cart', 404));
   }
+  
   const newCartItems = cart.cartitems.filter((i) => {
     return !(i.product.toString() === id.toString() && i.color === color);
   });
+  
   cart.cartitems = newCartItems;
   await cart.save();
+  
   return res.status(200).json({
     status: 'success',
     data: cart,
@@ -97,6 +122,9 @@ exports.removeProductFromCart = asyncHandler(async (req, res, next) => {
 });
 exports.clearCart = asyncHandler(async (req, res, next) => {
   const cart = await Cart.findOne({ user: req.user._id });
+  if (!cart) {
+    return next(new ApiError('Cart not found', 404));
+  }
   cart.cartitems = [];
   await cart.save();
   return res.status(200).json({
@@ -105,10 +133,17 @@ exports.clearCart = asyncHandler(async (req, res, next) => {
   });
 });
 exports.getCart = asyncHandler(async (req, res, next) => {
-  const cart = await Cart.findOne({ user: req.user._id }).populate({
+  let cart = await Cart.findOne({ user: req.user._id }).populate({
     path: 'cartitems.product',
     select: 'title price coverImage',
   });
+  if (!cart) {
+    cart = new Cart({
+      cartitems: [],
+      user: req.user._id,
+    });
+    await cart.save();
+  }
   res.status(200).json({
     status: 'success',
     data: cart,
@@ -117,6 +152,11 @@ exports.getCart = asyncHandler(async (req, res, next) => {
 exports.editCartItem = asyncHandler(async (req, res, next) => {
   const { id } = req.params; // ده productId
   const { color, quantity } = req.body;
+
+  // Validate product ID
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return next(new ApiError('Invalid product ID', 400));
+  }
 
   if (!color) {
     return next(new ApiError('Color is required', 400));
@@ -129,6 +169,11 @@ exports.editCartItem = asyncHandler(async (req, res, next) => {
   const product = await Product.findById(id);
   if (!product) {
     return next(new ApiError('Product not found', 404));
+  }
+
+  // Check if product is available
+  if (product.quantity <= 0) {
+    return next(new ApiError('Product is out of stock', 400));
   }
 
   const colorExists = product.colors.includes(color);
