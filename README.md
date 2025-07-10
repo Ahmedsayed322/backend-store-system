@@ -68,10 +68,6 @@ Before running this application, make sure you have the following installed:
 
 4. **Database Setup**
    
-   Run the seed script to populate the database with sample data:
-   ```bash
-   npm run seed
-   ```
 
 ## 🏃‍♂️ Running the Application
 
